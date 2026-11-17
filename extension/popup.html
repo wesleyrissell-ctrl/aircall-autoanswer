@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font: 13px system-ui, sans-serif; width: 260px; padding: 12px; }
+    label { display: block; margin: 8px 0 2px; }
+    input[type="text"], input[type="number"] { width: 100%; box-sizing: border-box; }
+    .row { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+    small { color: #666; }
+  </style>
+</head>
+<body>
+  <div class="row"><input type="checkbox" id="enabled"><b>Auto-answer inbound calls</b></div>
+  <label for="delayMs">Delay before answering (ms)</label>
+  <input type="number" id="delayMs" min="0" step="100">
+  <div class="row"><input type="checkbox" id="beep"> Beep before answering</div>
+  <div class="row"><input type="checkbox" id="debug"> Debug logging (console)</div>
+  <label for="customSelector">Answer button CSS selector (optional)</label>
+  <input type="text" id="customSelector" placeholder='e.g. [data-test="answer"]'>
+  <small>Leave blank to use text matching.</small>
+  <script src="popup.js"></script>
+</body>
+</html>

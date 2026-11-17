@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Aircall Inbound Auto-Answer",
+  "version": "0.1.1",
+  "description": "Auto-answers inbound calls in the Aircall web phone after a short delay and beep.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz4ts2JlEpdhpQFVYDLHlr+X5wg0NLxrSc4I/ZnDf7HeuMwdj0BEO7uHH4smWHdyGz4ilHDmQCGY9JMfzKW5Af+25LExPCkqgAScbftQF29u3LtH5zUZsnZ4hnVPF/nxWcD6e5Rl9wqTlDkJwf7+YzXUv6Sn/JUaUobfNf2Ra0pr7Ym7titkrMDp7iBKbfQyAQN5d7oHjfL2krjp/S6J2OZwy3up2Wl2KDYuPsqNChxM21VigP9PctkgAFbsU/8KR4h4TRJ7I1N7S0LNAdhOrqNMrXNRCrBUL/fWElybPWvn/4bob0ttxikXICPhfWx/1tN7yc2iY84aUWWwSM5wiBwIDAQAB",
+  "update_url": "https://wesleyrissell-ctrl.github.io/aircall-autoanswer/updates.xml",
+  "permissions": ["storage"],
+  "host_permissions": ["https://workspace.aircall.io/*", "https://phone.aircall.io/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://workspace.aircall.io/*", "https://phone.aircall.io/*"],
+      "js": ["content.js"],
+      "all_frames": true,
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Aircall Auto-Answer",
+    "default_popup": "popup.html"
+  }
+}
