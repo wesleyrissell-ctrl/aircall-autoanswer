@@ -20,20 +20,38 @@
 
   // Heuristic matching, used only when no custom selector is set.
   // Replace with a stable selector (aria-label or data attribute) once confirmed on a live ring.
-  const ANSWER_RE = /\b(answer|pick up|accept)\b/i;
-  const BAD_RE = /\b(decline|reject|hang up|end call|voicemail|ignore|dial|transfer)\b/i;
+  // A label must BE an answer label, not just contain the word: after-call tags such as
+  // "3_No_Answer_No_VM" contain "Answer" and were being clicked in a loop.
+  const ANSWER_RE = /^(answer|pick up|accept)( (the )?(incoming )?call)?( button)?$/i;
+  const BAD_RE = /\b(decline|reject|hang up|end call|voicemail|vm|no answer|missed|ignore|dial|transfer|tag)\b/i;
+  // Tags, toggles and list items are never answer buttons.
+  const NOT_A_BUTTON = '[aria-pressed], [aria-checked], [aria-selected], [role="checkbox"], [role="option"], [role="switch"], [role="tab"]';
 
   const visible = (el) =>
     !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
 
-  const labelOf = (el) =>
+  // "3_No_Answer_No_VM" -> "3 No Answer No VM"
+  const norm = (s) => (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+
+  const labelsOf = (el) =>
     [
       el.getAttribute("aria-label"),
       el.getAttribute("title"),
       el.getAttribute("data-test"),
       el.getAttribute("data-testid"),
       el.textContent
-    ].filter(Boolean).join(" ").trim();
+    ].map(norm).filter(Boolean);
+
+  // Each label is checked on its own, so "Answer" + "Answer" still matches.
+  function isAnswerButton(el) {
+    if (el.matches(NOT_A_BUTTON)) return false;
+    const labels = labelsOf(el);
+    if (labels.some((l) => BAD_RE.test(l))) return false;
+    return labels.some((l) => ANSWER_RE.test(l));
+  }
+
+  // An answer button disappears once clicked; anything still around is not one.
+  const clicked = new WeakSet();
 
   function findAnswerButton() {
     if (cfg.customSelector) {
@@ -47,10 +65,9 @@
     }
     const candidates = document.querySelectorAll('button, [role="button"]');
     for (const el of candidates) {
-      if (!visible(el) || el.disabled) continue;
-      const label = labelOf(el);
-      if (ANSWER_RE.test(label) && !BAD_RE.test(label)) {
-        log("Candidate answer button:", label, el);
+      if (!visible(el) || el.disabled || clicked.has(el)) continue;
+      if (isAnswerButton(el)) {
+        log("Candidate answer button:", labelsOf(el).join(" | "), el);
         return el;
       }
     }
@@ -88,6 +105,7 @@
       const btn = findAnswerButton();
       if (btn && cfg.enabled) {
         lastClick = Date.now();
+        clicked.add(btn);
         log("Clicking answer");
         btn.click();
       } else {
