@@ -18,58 +18,32 @@
     for (const k in changes) cfg[k] = changes[k].newValue;
   });
 
-  // Heuristic matching, used only when no custom selector is set.
-  // Replace with a stable selector (aria-label or data attribute) once confirmed on a live ring.
-  // A label must BE an answer label, not just contain the word: after-call tags such as
-  // "3_No_Answer_No_VM" contain "Answer" and were being clicked in a loop.
-  const ANSWER_RE = /^(answer|pick up|accept)( (the )?(incoming )?call)?( button)?$/i;
-  const BAD_RE = /\b(decline|reject|hang up|end call|voicemail|vm|no answer|missed|ignore|dial|transfer|tag)\b/i;
-  // Tags, toggles and list items are never answer buttons.
-  const NOT_A_BUTTON = '[aria-pressed], [aria-checked], [aria-selected], [role="checkbox"], [role="option"], [role="switch"], [role="tab"]';
+  // Aircall's Accept button on an inbound ring, confirmed on a live call:
+  //   <button type="button" data-test="pickup-button">
+  // Only this button is ever clicked. Text matching was removed because after-call tags
+  // such as "3_No_Answer_No_VM" matched it and were clicked in a loop.
+  // If Aircall renames the button, auto-answer simply stops; set customSelector to override.
+  const PICKUP_SELECTOR = 'button[data-test="pickup-button"]';
 
   const visible = (el) =>
     !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-
-  // "3_No_Answer_No_VM" -> "3 No Answer No VM"
-  const norm = (s) => (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
-
-  const labelsOf = (el) =>
-    [
-      el.getAttribute("aria-label"),
-      el.getAttribute("title"),
-      el.getAttribute("data-test"),
-      el.getAttribute("data-testid"),
-      el.textContent
-    ].map(norm).filter(Boolean);
-
-  // Each label is checked on its own, so "Answer" + "Answer" still matches.
-  function isAnswerButton(el) {
-    if (el.matches(NOT_A_BUTTON)) return false;
-    const labels = labelsOf(el);
-    if (labels.some((l) => BAD_RE.test(l))) return false;
-    return labels.some((l) => ANSWER_RE.test(l));
-  }
 
   // An answer button disappears once clicked; anything still around is not one.
   const clicked = new WeakSet();
 
   function findAnswerButton() {
-    if (cfg.customSelector) {
-      try {
-        const el = document.querySelector(cfg.customSelector);
-        return el && visible(el) ? el : null;
-      } catch (e) {
-        log("Bad custom selector", e);
-        return null;
-      }
+    const selector = cfg.customSelector || PICKUP_SELECTOR;
+    let els;
+    try {
+      els = document.querySelectorAll(selector);
+    } catch (e) {
+      log("Bad custom selector", e);
+      return null;
     }
-    const candidates = document.querySelectorAll('button, [role="button"]');
-    for (const el of candidates) {
+    for (const el of els) {
       if (!visible(el) || el.disabled || clicked.has(el)) continue;
-      if (isAnswerButton(el)) {
-        log("Candidate answer button:", labelsOf(el).join(" | "), el);
-        return el;
-      }
+      log("Answer button found:", selector, el);
+      return el;
     }
     return null;
   }
